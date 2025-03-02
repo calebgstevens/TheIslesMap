@@ -12,10 +12,10 @@
         }
         #map-container {
             position: relative;
-            width: 100vw;
-            height: 100vh;
+            width: 3000px;
+            height: 3000px;
             background: url('https://vulnona.com/game/the_isle/map/gateway/map.jpg?2024.11.03') no-repeat center center;
-            background-size: contain;
+            background-size: cover;
         }
         .marker {
             position: absolute;
@@ -39,7 +39,7 @@
             font-size: 12px;
         }
         #coordinate-form {
-            position: absolute;
+            position: fixed;
             top: 10px;
             left: 50%;
             transform: translateX(-50%);
@@ -47,27 +47,37 @@
             padding: 10px;
             border-radius: 5px;
             box-shadow: 0px 0px 10px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        #map-wrapper {
+            width: 100vw;
+            height: 100vh;
+            overflow: scroll;
+            position: relative;
         }
     </style>
 </head>
 <body>
     <div id="coordinate-form">
         <input type="text" id="name" placeholder="Your Name">
-        <input type="text" id="input-coords" placeholder="Enter Coordinates (X,Y,Z)">
+        <input type="text" id="input-coords" placeholder="Paste Coordinates (X,Y,Z)" onpaste="handlePaste(event)">
         <button onclick="addMarkerFromInput()">Add Marker</button>
     </div>
-    <div id="map-container"></div>
+    <div id="map-wrapper">
+        <div id="map-container"></div>
+    </div>
     
     <script>
         const mapContainer = document.getElementById('map-container');
+        const mapWrapper = document.getElementById('map-wrapper');
         let markers = JSON.parse(localStorage.getItem('markers')) || [];
 
         function parseCoordinates(input) {
             const parts = input.split(',').map(p => parseFloat(p.replace(/,/g, '')));
             if (parts.length >= 2) {
                 return {
-                    x: Math.round(parts[0] / 10000),
-                    y: Math.round(parts[1] / 10000)
+                    x: (parts[0] / 5000), 
+                    y: (parts[1] / 5000) 
                 };
             }
             return null;
@@ -93,17 +103,56 @@
             addMarker(coords.x, coords.y, name);
         }
 
+        function handlePaste(event) {
+            setTimeout(() => {
+                const inputCoords = document.getElementById('input-coords').value;
+                const coords = parseCoordinates(inputCoords);
+                if (coords) {
+                    addMarker(coords.x, coords.y, "Pasted Marker");
+                }
+            }, 100);
+        }
+
         function renderMarkers() {
             document.querySelectorAll('.marker').forEach(marker => marker.remove());
             markers.forEach(({ x, y, name }) => {
                 const marker = document.createElement('div');
                 marker.className = 'marker';
-                marker.style.left = `${x}%`;
-                marker.style.top = `${y}%`;
+                marker.style.left = `${x}px`;
+                marker.style.top = `${y}px`;
                 marker.setAttribute('data-name', name);
                 mapContainer.appendChild(marker);
             });
         }
+
+        // Enable panning and zooming
+        let isDragging = false;
+        let startX, startY, scrollLeft, scrollTop;
+        
+        mapWrapper.addEventListener('mousedown', (e) => {
+            isDragging = true;
+            startX = e.pageX - mapWrapper.offsetLeft;
+            startY = e.pageY - mapWrapper.offsetTop;
+            scrollLeft = mapWrapper.scrollLeft;
+            scrollTop = mapWrapper.scrollTop;
+        });
+        
+        mapWrapper.addEventListener('mouseleave', () => isDragging = false);
+        mapWrapper.addEventListener('mouseup', () => isDragging = false);
+        mapWrapper.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const x = e.pageX - mapWrapper.offsetLeft;
+            const y = e.pageY - mapWrapper.offsetTop;
+            mapWrapper.scrollLeft = scrollLeft - (x - startX);
+            mapWrapper.scrollTop = scrollTop - (y - startY);
+        });
+        
+        mapWrapper.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            let scale = Math.exp(e.deltaY * -0.001);
+            mapContainer.style.transform = `scale(${scale})`;
+        }, { passive: false });
 
         renderMarkers();
     </script>
