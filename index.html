@@ -38,26 +38,59 @@
             border-radius: 3px;
             font-size: 12px;
         }
+        #coordinate-form {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0px 0px 10px rgba(0,0,0,0.3);
+        }
     </style>
 </head>
 <body>
-    <div id="map-container" onclick="placeMarker(event)"></div>
+    <div id="coordinate-form">
+        <input type="text" id="name" placeholder="Your Name">
+        <input type="text" id="input-coords" placeholder="Enter Coordinates (X,Y,Z)">
+        <button onclick="addMarkerFromInput()">Add Marker</button>
+    </div>
+    <div id="map-container"></div>
     
     <script>
         const mapContainer = document.getElementById('map-container');
         let markers = JSON.parse(localStorage.getItem('markers')) || [];
 
-        function placeMarker(event) {
-            const rect = mapContainer.getBoundingClientRect();
-            const x = ((event.clientX - rect.left) / rect.width) * 100;
-            const y = ((event.clientY - rect.top) / rect.height) * 100;
-            const name = prompt('Enter your name:');
-            if (!name) return;
+        function parseCoordinates(input) {
+            const parts = input.split(',').map(p => parseFloat(p.replace(/,/g, '')));
+            if (parts.length >= 2) {
+                return {
+                    x: Math.round(parts[0] / 10000),
+                    y: Math.round(parts[1] / 10000)
+                };
+            }
+            return null;
+        }
 
+        function addMarker(x, y, name) {
             const markerData = { x, y, name };
             markers.push(markerData);
             localStorage.setItem('markers', JSON.stringify(markers));
             renderMarkers();
+        }
+
+        function addMarkerFromInput() {
+            const name = document.getElementById('name').value;
+            const inputCoords = document.getElementById('input-coords').value;
+            const coords = parseCoordinates(inputCoords);
+            
+            if (!name || !coords) {
+                alert('Please enter a valid name and coordinates in the format X,Y,Z');
+                return;
+            }
+            
+            addMarker(coords.x, coords.y, name);
         }
 
         function renderMarkers() {
