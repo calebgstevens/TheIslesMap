@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Map</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            text-align: center;
+        }
+        #map-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            background: url('https://vulnona.com/game/the_isle/map/gateway/map.jpg?2024.11.03') no-repeat center center;
+            background-size: contain;
+        }
+        .marker {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: red;
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            cursor: pointer;
+        }
+        .marker::after {
+            content: attr(data-name);
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="map-container" onclick="placeMarker(event)"></div>
+    
+    <script>
+        const mapContainer = document.getElementById('map-container');
+        let markers = JSON.parse(localStorage.getItem('markers')) || [];
+
+        function placeMarker(event) {
+            const rect = mapContainer.getBoundingClientRect();
+            const x = ((event.clientX - rect.left) / rect.width) * 100;
+            const y = ((event.clientY - rect.top) / rect.height) * 100;
+            const name = prompt('Enter your name:');
+            if (!name) return;
+
+            const markerData = { x, y, name };
+            markers.push(markerData);
+            localStorage.setItem('markers', JSON.stringify(markers));
+            renderMarkers();
+        }
+
+        function renderMarkers() {
+            document.querySelectorAll('.marker').forEach(marker => marker.remove());
+            markers.forEach(({ x, y, name }) => {
+                const marker = document.createElement('div');
+                marker.className = 'marker';
+                marker.style.left = `${x}%`;
+                marker.style.top = `${y}%`;
+                marker.setAttribute('data-name', name);
+                mapContainer.appendChild(marker);
+            });
+        }
+
+        renderMarkers();
+    </script>
+</body>
+</html>
